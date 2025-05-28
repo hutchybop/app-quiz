@@ -47,4 +47,4 @@ if (!cookieAlertCheck) {
     cookieAlert.style.display = 'block';
   } else {
     cookieAlert.style.display = 'none';
-  }
+}

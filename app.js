@@ -16,6 +16,8 @@ const helmet = require('helmet');
 const http = require('http');
 const socketIo = require('socket.io');
 const flash = require('connect-flash');
+const favicon = require('serve-favicon')
+const compression = require('compression')
 
 
 // Local imports
@@ -26,7 +28,8 @@ const quiz = require('./controllers/quiz');
 const api = require('./controllers/api');
 const policy = require('./controllers/policy');
 const quizChecks = require('./utils/quizChecks');
-const { validateLobbyNew, validateLobbyJoin, validateUserData } = require('./utils/middleware');
+const logger = require('./utils/logger');
+const { validateLobbyNew, validateLobbyJoin, validateUserData, validateTandC } = require('./utils/middleware');
 
 
 // Required for recaptcha
@@ -59,6 +62,14 @@ db.once("open", () => {
 });
 
 
+// Serve favicon from public/favicon directory
+app.use(favicon(path.join(__dirname, 'public', 'favicon', 'favicon.ico')));
+// Handle favicon requests explicitly
+app.use('/favicon.ico', (req, res) => {
+    res.sendStatus(204); // No Content
+});
+
+
 // Setting up the app
 app.engine('ejs', ejsMate); // Tells express to use ejsmate for rendering .ejs html files
 app.set('view engine', 'ejs'); // Sets ejs as the default engine
@@ -68,6 +79,10 @@ app.use(express.json()); // Middleware to parse JSON bodies
 app.use(methodOverride('_method')); // Allows us to add HTTP verbs other than post
 app.use(express.static(path.join(__dirname, '/public'))) // Serves static files (css, js, imgaes) from public directory
 app.use(mongoSanitize()) // Helps to stop mongo injection by not allowing certain characters in the query string
+
+
+// Logs all routes requested
+app.use(logger)
 
 
 // Setting up helmet to allow certain scripts/stylesheets
@@ -80,7 +95,6 @@ const scriptSrcUrls = [
     "https://www.gstatic.com/recaptcha/releases/",
     "https://use.fontawesome.com/"
 ];
-
 const styleSrcUrls = [
     "https://kit-free.fontawesome.com/",
     "https://stackpath.bootstrapcdn.com/",
@@ -91,24 +105,20 @@ const styleSrcUrls = [
     "https://fonts.gstatic.com",
     "https://www.gstatic.com/recaptcha/releases/"
 ];
-
 const imgSrcUrls = [
     "https://www.gstatic.com/recaptcha/",
     "https://www.google.com/recaptcha/"
 ];
-
 const connectSrcUrls = [
     "https://www.google.com/",
     "https://www.gstatic.com/recaptcha/"
 ];
-
 const fontSrcUrls = [
     "https://cdnjs.cloudflare.com/",
     "https://fonts.gstatic.com",
     "https://fonts.googleapis.com/",
     "https://use.fontawesome.com/"
 ];
-
 const frameSrcUrls = [
     'https://www.google.com',
     'https://www.recaptcha.net'
@@ -193,12 +203,17 @@ app.use(session(sessionConfig))
 app.use(flash());
 
 
+// Compression to make website run quicker
+app.use(compression())
+
 // Add any middleware to run before every request here
 app.use(async(req, res, next) => {
+
     res.locals.success = req.flash('success');
     res.locals.error = req.flash('error');
     res.locals.userData = req.session.userData || null // Sets userData for all routes
     next()
+
     // // Good for debugging
     // if(res.locals.userData){
     //     console.log(res.locals.userData.userName + ' ' + req.path)
@@ -229,6 +244,7 @@ app.post('/api/submit-quiz', catchAsync(api.submitQuiz))
 app.get('/api/show-quiz', api.showQuiz)
 app.get('/api/next-quiz', catchAsync(api.nextQuiz))
 app.get('/api/finished-quiz', catchAsync(api.finishedQuiz))
+app.get('/api/logs', catchAsync(api.logs))
 
 
 // Quiz routes
@@ -246,7 +262,7 @@ app.delete('/reset-quiz', catchAsync(quiz.resetQuizDelete))
 // Policy Routes
 app.get('/cookie-policy', policy.cookiePolicy)
 app.get('/tandc', recaptcha.middleware.render, policy.tandc)
-app.post('/tandc', recaptcha.middleware.verify, policy.tandcPost)
+app.post('/tandc', recaptcha.middleware.verify, validateTandC, policy.tandcPost)
 
 
 // Unknown (404) webpage error
@@ -261,10 +277,19 @@ app.use(errorHandler)
 
 
 let port = 3000; // This is the port setup with nginx on longrunner server
-server.listen(port, () => console.log('Server listening on PORT ' + port ));
+server.listen(port, () => console.log('Server listening on PORT', port ));
 
 
 // Simplified io.socket setup
 io.on('connection', (socket) => {
     // No need to log connections and disconnections if not required
+
+    const clientId = socket.id;
+    console.log(`User connected: ${clientId}`);
+
+    // Listen for disconnection
+    socket.on('disconnect', () => {
+        console.log(`User disconnected: ${clientId}`);
+    });
+    
 });

@@ -17,7 +17,7 @@ module.exports.tandc = (req, res) => {
 }
 
 
-// POST - Info
+// POST - TandCs
 module.exports.tandcPost = (req, res) => {
 
     if (!req.recaptcha.error) {

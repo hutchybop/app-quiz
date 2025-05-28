@@ -50,8 +50,9 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Indie Flower">
 
     <!-- Personal CSS -->
-    <link rel="stylesheet" type="text/css" href="/stylesheets/<%= page %>.css"/>
     <link rel="stylesheet" type="text/css" href="/stylesheets/boilerplate.css"/>
+    <link rel="stylesheet" type="text/css" href="/stylesheets/<%= page %>.css"/>
+
 
     <!-- Setting up socket.io to work everywhere -->
     <script src="/socket.io/socket.io.js"></script>
@@ -62,21 +63,21 @@
 
     <main class="vh-100">
 
-            <!-- Cookie Alert -->
-            <div class="container mt-3">
-              <div class="row">
-                <div class="col">
-                  <div id="cookieAlert" class="alert alert-danger alert-dismissible fade show" role="alert">
-                    This site uses essential cookies for functionality. By continuing to use our site, you agree to their use. 
-                    <br>
-                    <a href="/cookie-policy">Cookie Policy</a>
-                    <button id="cookieAlertBtn" type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true"><i class="fa-regular fa-thumbs-up"></i></i></i></span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+      <!-- Cookie Alert -->
+      <div class="container mt-3">
+        <div class="row">
+          <div class="col">
+            <div id="cookieAlert" class="alert alert-danger alert-dismissible fade show" role="alert">
+              This site uses essential cookies for functionality. By continuing to use our site, you agree to their use. 
+              <br>
+              <a href="/cookie-policy">Cookie Policy</a>
+              <button id="cookieAlertBtn" type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true"><i class="fa-regular fa-thumbs-up"></i></i></i></span>
+              </button>
             </div>
+          </div>
+        </div>
+      </div>
 
       <% if(userData && userData.quizMaster == true){ %>
         <!-- Lets the QuizMaster reset the Quiz -->
