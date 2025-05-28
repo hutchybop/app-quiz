@@ -17,6 +17,9 @@ output*.txt
 # TODO file
 TODO.js
 
+# monogdb dumps
+dump/
+
 # Other possible files
 *.log
 *.bak
@@ -25,12 +28,14 @@ TODO.js
 Old_Versions/
 DB_Backups/
 newServerScripts/
+serverScripts/
 Posts/
 coverage/
 dist/
 build/
 .vscode/
 .idea/
+updateAll.sh
 Thumbs.db
 *.test.js
 *.cache
