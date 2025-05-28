@@ -1,36 +1,57 @@
-const checkUser = localStorage.getItem('userName')
-const lobbyBtn = document.querySelector('#lobbyBtn')
-const inProgress = document.querySelector('#inProgress')
-const dupe = document.querySelector('#dupe')
+const newBtn = document.querySelector('#newBtn')
+const joinBtn = document.querySelector('#joinBtn')
+const showNewQuiz = document.querySelector('#showNewQuiz')
+const showJoinQuiz = document.querySelector('#showJoinQuiz')
+const quizCodeInput = document.querySelector('#quizCodeInput')
+const cancelBtnNew = document.querySelector('#cancelBtnNew')
+const cancelBtnJoin = document.querySelector('#cancelBtnJoin')
 
-// Enables the 'start' button and hides the inProgress text only for userName 'hutchybop' 
-// unless the quiz is not inProgress, then enables and hides for everyone
-if(checkUser !== null && checkUser.toLowerCase() === 'hutchybop' || gameInProgress === false){
-    lobbyBtn.removeAttribute('disabled')
-    inProgress.style.display = 'none'
+
+// Shows userName input for a new Quiz
+newBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    newBtn.style.display = "none"
+    joinBtn.style.display = "none"
+    showNewQuiz.style.display = "block"
+})
+
+
+// Shows quiz code and userName inputs
+joinBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    newBtn.style.display = "none"
+    joinBtn.style.display = "none"
+    showJoinQuiz.style.display = "block"
+})
+
+
+// Cancels the input and resets the page
+const cancelFunc = () => {
+    newBtn.style.display = "block"
+    joinBtn.style.display = "block"
+    showNewQuiz.style.display = "none"
+    showJoinQuiz.style.display = "none"
 }
-
-// userListArray.forEach(el => {
-//     if(checkUser !== null && checkUser === el){
-//         window.location.replace(userGameState);
-//     }
-// });
+cancelBtnNew.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    cancelFunc();
+})
+cancelBtnJoin.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    cancelFunc();
+})
 
 
 // If a duplicate name has been chosen, the dupe flash warning will be shown to the user
-if(userDupe === false){
-    dupe.style.display = "none"
+// The local storage will also be cleared.
+if(isQuizCode){
+    joinFunc()
 }
-
-// Get the start signal from app.js and reloads the page.
-// As the quiz is started the inPrgoress will change to true and the user will be locked out
-socket.on('start', () => {
-    lobbyBtn.removeAttribute('disabled')
-    inProgress.style.display = 'none'
-})
-
-// Once the user enters, thier localStorage is cleared and the new userName added.
-lobbyBtn.addEventListener('click', () => {
-    localStorage.clear()
-    localStorage.setItem("userName", userName.value);
-})
+if(isDupe || isJoin){
+    joinFunc()
+    quizCodeInput.value = quizCode
+}

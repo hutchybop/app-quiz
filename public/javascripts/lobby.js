@@ -1,27 +1,64 @@
-const checkUser = localStorage.getItem('userName')
-const start = document.querySelector("#start")
-const userList = document.querySelector("#userList")
+const userList = document.querySelector('#userList')
+const startBtn = document.querySelector('#startBtn')
 
-// Hides the start button to everyone apart from the 'hutchybop' userName
-if(checkUser === null || checkUser.toLowerCase() !== 'hutchybop'){
-    start.style.display = "none";
-}
 
-// Receives a signal from app.js middleware if a newUser is added to the quiz
-// Then reloads the page and shows the newUser
-socket.on('newUser', (userName) => {
-    const addUser = document.createElement("li");
-    addUser.classList.add("list-group-item")
-    addUser.innerText = userName
-    userList.appendChild(addUser)
+// Listen for the 'userUpdated' event
+socket.on('userJoined', (userNameJoin) => {
+    const newUserItem = document.createElement('li');
+    newUserItem.className = 'list-group-item';
+    newUserItem.id = userNameJoin;
+    newUserItem.textContent = userNameJoin;
+    userList.appendChild(newUserItem);
 });
 
-// Receives a signal from app.js middleware if a start is detected
-// Then sends the users to /quiz to start the quiz
-socket.on('start', () => {
-    window.location.replace("/quiz");
+
+// Listen for resetUser event from reset-user route 
+socket.on('resetUser', (quizCode, userName) => {
+    if(quizCode == userData.quizCode){
+        const userRemove = document.getElementById(userName)
+        userRemove.remove()
+    }
 })
 
-if(checkUser !== null && checkUser.toLowerCase() === 'hutchybop'){
-    socket.emit('lobby')
-}
+
+startBtn.addEventListener("click", function (e){
+    e.preventDefault();
+    e.stopPropagation();
+    // Sends an AJAX request to the server to start the quiz
+    fetch('/api/start-quiz', {
+        method: 'POST',
+        credentials: 'include',
+        body: JSON.stringify(userData),
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.message == 'success'){
+            window.location.replace('/quiz');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+})
+
+
+socket.on('start', (quizCode) => {
+    if(quizCode == userData.quizCode && userData.quizMaster == false){
+        fetch('/api/start-quiz', {
+            method: 'POST',
+            credentials: 'include',
+            body: JSON.stringify(userData),
+            headers: {
+              'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.message == 'success'){
+                window.location.replace('/quiz');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+})

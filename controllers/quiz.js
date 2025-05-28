@@ -1,211 +1,321 @@
-// INDEX - index (GET)
-const { User } = require('../models/user')
-const { Quiz } = require('../models/quiz')
-const mongoose = require('mongoose');
+const { Quiz } = require('../models/quiz');
+const { Question } = require('../models/question');
 const axios = require('axios');
+const getComment = require('../utils/comments');
 
 
-module.exports.index = async (req, res) => {
+// GET - index
+module.exports.index = (req, res) => {
 
-    // Checks whether a quiz is in progress
-    const quiz = await Quiz.findOne({_id: "657227d8fd2109cc5cd75df7"})
-    const users = await User.find()
-    let inProgress = quiz.gameInProgress
-    let gameState = JSON.stringify(quiz.state)
-    let userListParse = []
+    // Uses the queryParam from lobbyPOST
+    const isQuizCode = req.query.isQuizCode
+    const isDupe = req.query.isDupe
+    const quizCode = req.query.quizCode
+    const isJoin = req.query.isJoin
+    const isResetQuiz = req.query.isResetQuiz
 
-    // Adds all the userNames to userList array to sent to to lobby.ejs
-    for(u of users){
-        userListParse.push(u.userName)
+    const kick = req.query.kick
+
+    if(isResetQuiz){
+        req.session.userData = undefined
+        req.flash('error', 'The quiz has been reset...');
+        return res.redirect('/')
     }
 
-    const userList = JSON.stringify(userListParse)
-
-    // Uses the queryParam from lobbyPOST to see if the user has entered a userName already in use
-    const checkDupe = req.query
-    let dupe = false
-    if(checkDupe.dupe){
-        dupe = true
+    if(kick){
+        req.session.userData = undefined
+        req.query.kick = undefined
+        req.flash('error', 'You have been kicked from the Quiz!');
+        return res.redirect('/')
     }
 
-    res.render('quiz/index', {inProgress, dupe, userList, gameState, title: 'Start Your Quiz', page: 'index'})  
+    res.render('quiz/index', {isQuizCode, isDupe, quizCode, isJoin, title: 'Start Your Quiz', page: 'index'})  
 }
 
 
-// LOBBY - lobby (POST)
-module.exports.lobbyPost = async (req, res) => {
+// POST - lobby-new
+module.exports.lobbyNewPost = async (req, res) => {
 
-    const userName = req.body.userName
+    const { diff, auto } = req.body
+    const amount = req.body.amount || 10
+    const userNameNew = req.body.userNameNew
+    let setAuto
 
-    // Each new user that enters is entered into the db
-    const checkUser = await User.find({userName: userName})
-    // The if formular, checks if the userName is already in the db,
-    // if not it creates the user and redirects to lobby 
-    // if it is they are redirected to back to index with the queryParam
-    if(checkUser.length === 0){
-        const newUser = new User({
-            userName: userName,
-            answers: []
-        })
-        await newUser.save()
-    }else{
-        return res.redirect('/?dupe=true')
-    }
-
-    // Emits newUser signal to lobby.ejs with the newUser variable
-    ioSocket.emit('newUser', userName)
+    // Function to create a random 4-digit quiz code
+    const generateQuizCode = () => {
+        const numbers = '0123456789';
+        let quizCode = '';
+        for (let i = 0; i < 4; i++) {
+            quizCode += numbers.charAt(Math.floor(Math.random() * numbers.length));
+        }
+        return quizCode;
+    };
     
-    // Query param is used in the app.js middleware to detect a newuser
-    res.redirect('/lobby')
+    // Function to check the quizCode is unique
+    const createUniqueQuizCode = async () => {
+        let isUnique = false;
+        let quizCode = '';
+    
+        while (!isUnique) {
+            quizCode = generateQuizCode();
+            const existingQuiz = await Quiz.findOne({ quizCode });
+            if (!existingQuiz) {
+                isUnique = true;
+            }
+        }
+    
+        return quizCode;
+    };
 
+    // Checks if auto is defined
+    if(auto){
+        setAuto = true
+    } else {
+        setAuto = false
+    }
+    
+    // Runs the function to get a unique quizCode
+    const quizCode = await createUniqueQuizCode();
+
+    // Defining common setup variables to make sure Quiz and userData are the same
+    const setUserNameNew = userNameNew
+    const setQuizCode = quizCode
+    const setProgress = '/lobby'
+    const setQuestionNumber = 0
+
+    // Add userData to session-data
+    req.session.userData = {
+        userName: setUserNameNew,
+        quizCode: setQuizCode,
+        progress: setProgress,
+        quizProgress: 'na',
+        questionNumber: setQuestionNumber,
+        answers: [],
+        quizMaster: true,
+        auto: setAuto
+    }
+
+    // Creates a new quiz with the 4-digit code
+    const newQuiz = new Quiz({
+        quizCode: setQuizCode,
+        quizMaster: setUserNameNew,
+        users: [{userName: setUserNameNew, score: 0}],
+        progress: setProgress,
+        questionNumber: setQuestionNumber
+    })
+    await newQuiz.save()
+
+    // Add the rquired amount of questions to the Question collection in the db
+    // Then adds each question to the new Quiz
+    // Times run depends on the amount of questions desired, eg 20 questions, run 2 times
+    for (let i = 1; i <= amount/10; i++){
+
+        const questions = await axios.get('https://the-trivia-api.com/v2/questions?difficulties=' + diff);
+
+        for(q of questions.data){
+            let newQuestion = new Question({
+                category: q.category,
+                correctAnswer: q.correctAnswer,
+                incorrectAnswers: q.incorrectAnswers,
+                question: q.question.text,
+                difficulty: q.difficulty
+            })
+            await newQuestion.save()
+            newQuiz.questions.push(newQuestion._id);
+            await newQuiz.save();
+        };
+    }
+
+    req.flash('success', '<strong>Quiz Created</strong><br>Give the Quiz Code to your friends so they can join...');
+    res.redirect('/lobby')
 }
+
+
+// POST - lobby-join
+module.exports.lobbyJoinPost = async (req, res) => {
+
+    const userQuizCode = req.body.quizCode
+    let userNameJoin = req.body.userNameJoin
+
+    const findQuiz = await Quiz.findOne({quizCode: userQuizCode})
+
+    if(!findQuiz){
+        req.flash('error', 'Quiz Code: ' + userQuizCode + '. Does not exist!');
+        return res.redirect('/?isQuizCode=false&quizCode=' + userQuizCode) // There is no quiz with the quizCode
+    } 
+    if(findQuiz.users.some(user => user.userName === userNameJoin)){
+        req.flash('error', 'That Username is already in use!');
+        return res.redirect('/?isDupe=true&quizCode=' + userQuizCode) // The username has already been taken
+    }
+
+    // Add userData to session-data
+    req.session.userData = {
+        userName: userNameJoin,
+        quizCode: userQuizCode,
+        progress: '/lobby',
+        quizProgress: 'na',
+        questionNumber: 0,
+        answers: [],
+        quizMaster: false
+    }
+
+    // Adds the user to the quiz
+    findQuiz.users.push({userName: userNameJoin, score: 0}) // Add user to users array
+    await findQuiz.save()
+
+    // emits that a user has joined to lobby.ejs
+    req.io.emit('userJoined', userNameJoin);
+    
+
+    req.flash('success', 'Give the Quiz Code to your friends so they can join...');
+    res.redirect('/lobby')
+}
+
 
 // LOBBY - lobby (GET)
 module.exports.lobby = async (req, res) => {
 
-    const users = await User.find()
-    let userList = []
+    let userData = res.locals.userData
 
-    // Adds all the userNames to userList array to sent to to lobby.ejs
-    for(u of users){
-        userList.push(u.userName)
-    }
-
-    return res.render('quiz/lobby', {userList, title: 'Lobby', page: 'lobby'})
+    const checkQuiz = await Quiz.findOne({ quizCode: userData.quizCode})
     
+    let userList = checkQuiz.users
+    const quizMaster = checkQuiz.quizMaster
+    const quizCode = checkQuiz.quizCode
+
+    res.render('quiz/lobby', {userList, quizMaster, quizCode, userData, title: 'Lobby', page: 'lobby'})
+
 }
 
 
-// START - start (POST)
-module.exports.startPost = async (req, res) => {
-
-    // Code below, requests the questions from the api,
-    // adds all the relevant question info the the db,
-    // changes the gameInPrgress to true and redirects to quiz
-    // Once this happens everone in lobby will automatically enter the quiz 
-    // as the lobby page automatically refreshes
-
-    const questDiff = req.body.diff
-    const amount = req.body.amount / 10
-    let x = 0
-    let cat = []
-    let correct = []
-    let answers = []
-    let quest = []
-    let diff = []
-
-    // Times run depends on the amount of questions desired, eg 20 questions, run 2 times
-    for (let i = 1; i <= amount; i++){
-
-        const questions = await axios.get('https://the-trivia-api.com/v2/questions?difficulties=' + questDiff);
-
-        for(q of questions.data){
-            cat.push(q.category)
-            correct.push(q.correctAnswer)
-            answers.push(q.incorrectAnswers)
-            quest.push(q.question.text)
-            diff.push(q.difficulty)
-        };
-
-        await Quiz.findOneAndUpdate(
-            {_id: "657227d8fd2109cc5cd75df7"}, 
-            {
-                gameInProgress: true,
-                cat,
-                correct,
-                answers,
-                quest,
-                diff,
-                x,
-                state: '/'
-            }
-        );
-    }
-
-    // emits signal to lobby.ejs that start has been initiated
-    ioSocket.emit('start')
-
-    // start queryParam used in app.js middleware to detect the start of the quiz
-    res.redirect('/quiz')
-}
-
-
+// GET - Quiz
 module.exports.quiz = async (req, res) => {
 
-    const quizDB = await Quiz.findOne({_id: "657227d8fd2109cc5cd75df7"})
+    let userData = res.locals.userData
+    const checkQuiz = await Quiz.findOne({ quizCode: userData.quizCode})
+    .populate({ path: 'questions'})
 
-    const quiz = JSON.stringify(quizDB)
+    const questions = checkQuiz.questions
+    const usersSubmitted = checkQuiz.usersSubmitted
+    const users = checkQuiz.users
 
+    // Emits the start signal picked up in lobby.ejs
+    if(userData.quizMaster === true){
+        req.io.emit('start', userData.quizCode)
+    }
 
-    res.render('quiz/quiz', {quiz, title: 'Easy if you know it!', page: 'quiz'})
+    if(userData.questionNumber > questions.length){
+
+        const quizMaster = userData.quizMaster 
+
+        if(quizMaster === true){    
+
+            await Quiz.findOneAndUpdate(
+                {quizCode: userData.quizCode}, 
+                {$set: {usersSubmitted: []}, $set: {progress: '/finish'}}
+            )
+        
+        }
+
+        req.session.userData.progress = '/finish'
+        req.session.userData.quizProgress = 'na'
+
+        return res.redirect('/finish')
+    }
+
+    res.render('quiz/quiz', {questions, userData, usersSubmitted, users, title: 'Quiz', page: 'quiz'})
 }
 
 
-module.exports.finishPost = async (req, res) => {
-
-    const { userFin, ansFin } = req.body
-    const ansFinJ = JSON.parse(ansFin)
-
-    // Adds users answers to db
-    await User.findOneAndUpdate({userName: userFin}, {answers: ansFinJ})
-
-    ioSocket.emit('userFinished', {userName: userFin, answers: ansFinJ})
-
-
-    res.redirect('/finish')
-}
-
-
+// GET - finish
 module.exports.finish = async (req, res) => {
 
-    const users = await User.find()
+    const userData = res.locals.userData
 
-    let userResults = []
+    // Sends the users array from Quiz to finish.ejs
+    const quiz = await Quiz.findOne({quizCode: userData.quizCode})
+    const users = quiz.users
+    const numOfQuestions = quiz.questions.length
 
-    users.forEach(u => {
-        if(u.answers.length !== 0){
-            let user = {userName: u.userName, answers: u.answers}
-            userResults.push(user)
-        }
-    })
-    
-    let userResultsStr = JSON.stringify(userResults)
+    let userScores =[]
 
+    for(u of users){
 
-    res.render('quiz/finish', {userResultsStr, title: 'How did you do?', page: 'finish'})
+        let userScore = (u.score / numOfQuestions) * 100
+        let comment = getComment(userScore)
+
+        let score = {
+            userName: u.userName,
+            userScore: userScore,
+            userComment: comment
+        }  
+
+        userScores.push(score)
+    }
+
+    res.render('quiz/finish', { userScores, title: 'How did you do?', page: 'finish'})
 }
 
 
+// PATCH - /quiz-kick-user
+module.exports.quizKickUserPatch = async (req, res) => {
 
-module.exports.resetPost = async (req, res) => {
+    const userNameKicked = req.body.kickUser
+    const userData = res.locals.userData
 
-    // Route resets the quiz, removing all users and setting quiz back to default.
+    await Quiz.updateOne(
+        {quizCode: userData.quizCode},
+        { $pull: {
+            users: { userName: userNameKicked },
+            usersSubmitted: userNameKicked
+        }}
+    );
 
-    await mongoose.connection.db.dropCollection('users')
+    req.io.emit('kickedUser', userNameKicked)
 
-    await Quiz.findOneAndUpdate(
-        {_id: "657227d8fd2109cc5cd75df7"}, 
-        {   
-            gameInProgress: false,
-            cat: [],
-            correct: [],
-            answers: [],
-            quest: [],
-            diff: [],
-            x: 0,
-            state: '/'
-        }
-    )
-    
-    // Emits the reset signal picked up in boilerplater.ejs
-    // Sends the user back to '/' after the above code has run to reset the quiz
-    ioSocket.emit('reset')
+    req.flash('success', `${userNameKicked} has been kicked`);
+    res.redirect('/quiz')
 
-    // Clears the userSubmittedList in app.js
-    ioSocket.emit('clearSubmitted')
+}
 
-    
-    // Redirects with queryParam to send everybody back to /
+
+// PATCH - reset-user
+module.exports.resetUserPatch = async (req, res) => {
+
+    // Route removes usr from the quiz,
+    // and deletes the userData.
+
+    const userData = req.session.userData
+    req.session.userData = undefined
+
+    await Quiz.updateOne(
+        {quizCode: userData.quizCode},
+        { $pull: { users: { userName: userData.userName }, usersSubmitted: userData.userName } }
+    );
+
+    // Emits the resetUser signal picked up in lobby.ejs
+    req.io.emit('resetUser', userData.quizCode, userData.userName)
+
+    req.flash('error', 'You have left the Quiz!');
     res.redirect('/')
 }
 
+
+// DELETE - reset-quiz
+module.exports.resetQuizDelete = async (req, res) => {
+
+    // Route resets the quiz, removing all users, wiping thier userData 
+    // and deleting the quiz from the db.
+
+    const userData = res.locals.userData
+    req.session.userData = undefined
+
+    await Quiz.deleteOne({quizCode: userData.quizCode})
+
+    // Emits the resetQuiz signal picked up in boilerplater.ejs
+    // Sends the user back to '/' and wipes userData if thier quizCode is the same
+    req.io.emit('resetQuiz', userData.quizCode)
+
+    req.flash('error', 'The quiz has been reset!');
+    res.redirect('/')
+}

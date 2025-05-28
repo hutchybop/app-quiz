@@ -1,328 +1,318 @@
-const checkUser = localStorage.getItem('userName')
-const cat = document.querySelector('#cat')
-const diff = document.querySelector('#diff')
-const question = document.querySelector('#question')
-const questNum = document.querySelector('#questNum')
-const multiOne = document.querySelector('#multiOne')
-const multiTwo = document.querySelector('#multiTwo')
-const multiThree = document.querySelector('#multiThree')
-const multiFour = document.querySelector('#multiFour')
-const next = document.querySelector('#next')
-const checkboxes = document.querySelectorAll("input[type='checkbox']")
-const submitBtn = document.querySelector('#submitBtn')
-const correctAns = document.querySelector('#correctAns')
-const finishForm = document.querySelector('#finishForm')
-const userFin = document.querySelector('#userFin')
-const ansFin = document.querySelector('#ansFin')
-const submittedDiv = document.querySelector('#submittedDiv')
-const submittedUl = document.querySelector('#submittedUl')
+const multiOne = document.getElementById('multiOne')
+const ansOne = document.getElementById('ansOne')
+const labelOne = document.getElementById('labelOne')
+const multiTwo = document.getElementById('multiTwo')
+const ansTwo = document.getElementById('ansTwo')
+const labelTwo = document.getElementById('labelTwo')
+const multiThree = document.getElementById('multiThree')
+const ansThree = document.getElementById('ansThree')    
+const labelThree = document.getElementById('labelThree')
+const multiFour = document.getElementById('multiFour')
+const ansFour = document.getElementById('ansFour')
+const labelFour = document.getElementById('labelFour')
+const submitBtn = document.getElementById('submitBtn')
+const showBtn = document.getElementById('showBtn')
+const nextBtn = document.getElementById('nextBtn')
+const submittedUl = document.getElementById('submittedUl')
+const correctAns = document.getElementById('correctAns')
+const correctAnsDiv = document.getElementById('correctAnsDiv')
 
-// Controls the question number (starts at 0 due to indexing)
-let x = quiz.x
-let submitBtnState = null
-let checkedNum = null
-let userSubmittedArray = []
 
-const userRefresh = () => {
-    localStorage.removeItem('disconnected')
-    checkboxes.forEach(el => {
-        if(el.checked === true){
-            checkedNum = el.id
-        }
-    })
-    localStorage.setItem('disconnected', JSON.stringify([submitBtn.style.display, checkedNum, userSubmittedArray]))
+// Update if disconnected variables
+const quizProgress = userData.quizProgress
+const questionNumber = userData.questionNumber
+let numOfLis = usersSubmitted.length
+let showAnsTimer = 5
+let nextQuestTimer = 10
+
+// Setting up the Quiz
+// Create the 4 answers for the question
+let answersArray = []
+for(a of questions[userData.questionNumber - 1].incorrectAnswers){
+    answersArray.push(a)
 }
-
-// Allows beforeunload to work on multiple browsers including iphone/ipad
-let unloaded = false;
-window.addEventListener("beforeunload", function(e)
-{
-    if (unloaded)
-        return;
-    unloaded = true;
-    userRefresh()
-});
-window.addEventListener("visibilitychange", function(e)
-{
-    if (document.visibilityState == 'hidden')
-    {
-        if (unloaded)
-            return;
-        unloaded = true;
-        userRefresh()
-    }
-});
-
-let dis =  JSON.parse(localStorage.getItem('disconnected'))
-if(dis){
-    submitBtnState = dis[0]
-    checkedNum = dis[1]
-    userSubmittedArray = dis[2]
+answersArray.push(questions[userData.questionNumber - 1].correctAnswer)
+// Shuffle the answersArray
+for (let i = answersArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [answersArray[i], answersArray[j]] = [answersArray[j], answersArray[i]];
 }
+// Add the shuffled answers to the multiOne to multiFour elements
+// Change the id of the checkboxes to the answers
+// Change the for attribute of the labels to the answers
+multiOne.textContent = answersArray[0];
+ansOne.id = answersArray[0];
+labelOne.setAttribute('for', answersArray[0])
+multiTwo.textContent = answersArray[1];
+ansTwo.id = answersArray[1];
+labelTwo.setAttribute('for', answersArray[1])
+multiThree.textContent = answersArray[2];
+ansThree.id = answersArray[2];
+labelThree.setAttribute('for', answersArray[2])
+multiFour.textContent = answersArray[3];
+ansFour.id = answersArray[3];
+labelFour.setAttribute('for', answersArray[3])
 
 
-finishForm.style.display = "none"
-
-// Sets up the question
-const quest = (x) => {
-
-    // Setting up the answers in alphabetical order
-    let answersArray = []
-    for(a of quiz.answers[x]){
-        answersArray.push(a)
-    }
-    answersArray.push(quiz.correct[x])
-    answersArray.sort()
-
-    // Adding question details to DOM
-    cat.innerText = quiz.cat[x]
-    diff.innerText = quiz.diff[x]
-    question.innerText = quiz.quest[x]
-    questNum.innerText = x + 1
-    multiOne.innerText = answersArray[0]
-    multiTwo.innerText = answersArray[1]
-    multiThree.innerText = answersArray[2]
-    multiFour.innerText = answersArray[3]
-}
-
-
-// nextQuest function, need to be first to run it below
-const nextQuest = (x, emit) => {
-
-    // emit should be: socket.emit('nextQuest', x)
-    // Only to be used by hutchyBop
-    // emits an io signal that next has been clicked
-    // Should update all user broswers with next question/show answer
-    emit
-  
-
-    if(x !== quiz.answers.length){
-
-        if(x%2 === 1 || x%2 === 0){ // If x is a full number, next question
-            // Reshows the submit button, unless user has disconnected, then shows last known state
-            if(submitBtnState !== null){
-                submitBtn.style.display = submitBtnState
-                if(submitBtnState === 'none'){
-                    checkboxes.forEach(el => el.disabled = true)
-                }else{
-                    checkboxes.forEach(el => el.disabled = false)
+// Only allows one check box to be checked at a time
+const boxes = document.querySelectorAll('input[name="answer"]')
+boxes.forEach(box => {
+    box.addEventListener('click', () => {
+        boxes.forEach(b => {
+            if(b !== box){
+                if(b.checked){
+                    b.checked = false
                 }
-            }else{
-                submitBtn.style.display = ""
-                checkboxes.forEach(el => el.disabled = false)
-
             }
-            // Changes next button's text
-            next.innerText = 'Show Answer'
-            // Resets the checkboxes and correct answer for the next question
-            if(checkedNum !== null){
-                checkboxes.forEach(el => {
-                    if(el.id === checkedNum){
-                        el.checked = true
-                    }else{
-                        el.checked = false
-                    }
-                    el.parentNode.style.display = ""
-                })
-            }else{
-                checkboxes.forEach(el => {
-                    el.checked = false
-                    el.parentNode.style.display = ""
-                })
-            }
+        })
+    })
+})
 
-            // Hides the correct answer
-            correctAns.innerText = ""
 
-            // Shows the question
-            quest(x)
-    
-        }else{ // If x ends in .5, show answer
-
-            // Shows the question, incase the user disconnected
-            // Need to -0.5 to show the last question
-            quest(x-0.5)
-
-            submitBtn.style.display = "none"
-
-            // Removes all un-checked answers from display
-            if(checkedNum !== null){
-                checkboxes.forEach(el => {
-                    if(el.id === checkedNum){
-                        el.checked = true
-                        el.parentNode.style.display = ""
-                        el.disabled = true
-                    }else{
-                        el.parentNode.style.display = "none"
-                    }
-                })
-            }else{
-                checkboxes.forEach(el => {
-                    if(el.checked === false){
-                        el.parentNode.style.display = "none"
-                    }else{
-                        el.parentNode.style.display = ""
-                    }
-                })
-            }
-
-            // Shows the correct answer to the user
-            const correct = quiz.correct[x-0.5]
-            correctAns.innerText = 'The correct answer was: ' + correct
-
-            // Changes the next button text
-            next.innerText = 'Next Question'
+// Putting the question back to answered if the user disconnected
+const answered = () => {
+    // Disabling the submit button
+    submitBtn.disabled = true
+    // Select the user's checked answer
+    const boxes = document.querySelectorAll('input[name="answer"]')
+    boxes.forEach(box => {
+        if(box.id == userData.answers[questionNumber - 1]){
+            box.checked = true
+        }else{
+            box.nextElementSibling.style.opacity = '0.5';
         }
+        box.disabled = true
+    })
+}
 
-        // Reseting disconnected localStorage if present
-        let discon = localStorage.getItem('disconnected')
-        if(discon){
-            localStorage.removeItem('disconnected')
-            submitBtnState = null
-            checkedNum = null
+
+// Only show the showBtn button to the quizMaster if
+// all users have answered the question
+const checkAllSubmitted = () => {
+    if(userData.quizMaster == true){
+        if(numOfLis == users.length){
+            showBtn.style.display = 'block'
+            // If auto is true show the answer in 5 seconds
+            if(userData.auto === true){
+                const timer = setInterval(() => {
+                    showBtn.innerText = `Show Answer (${showAnsTimer})`
+                    // Timer, set at the start of js
+                    showAnsTimer--
+                    if(showAnsTimer < 0){
+                        clearInterval(timer)
+                        showAnswer()
+                    }
+                }, 1000)
+            }
         }
+    }
+}
 
+
+// Submits the user's answer to the api and disables the question
+const submitAnswer = () => {
+    // Check if the user has selected an answer
+    const checkedBoxes = document.querySelectorAll('input[name="answer"]:checked')
+    if(checkedBoxes.length === 0){
+        return alert("You need to select an answer")
+    }
+    // Get the users answer
+    let answer = document.querySelector('input[name="answer"]:checked').id
+    // Check if the answer is correct and update score
+    // 1 for correct, 0 for incorrect
+    let correctAnswer = questions[userData.questionNumber - 1].correctAnswer
+    let score
+    if(answer === correctAnswer){
+       score = 1
     }else{
-        alert('End of Quiz!')
-        const userNameFin = localStorage.getItem('userName')
-        const userAnsFin = localStorage.getItem('userAns')
-        userFin.value = userNameFin
-        ansFin.value = userAnsFin
-        document.forms["finishForm"].submit();
+        score = 0
     }
-}
-
-// Loads first question straight away
-nextQuest(x)
-
-
-// Hides the next button to everyone apart from the 'hutchybop' userName
-if(checkUser === null || checkUser.toLowerCase() !== 'hutchybop'){
-    next.style.display = "none";
-}
-
-
-// ALlows only one checkbox to be checked at once.
-for(let i = 0; i < checkboxes.length; i++){
-    checkboxes[i].addEventListener("change", (event) => {
-        if(event.target.checked === true){
-            checkboxes.forEach(el => el.checked = false)
-            checkboxes[i].checked = true
+    // Data to send to the api
+    let userDataToSubmit = {
+        score: score,
+        answer: answer
+    }
+    // Send submitData to /api/submit-quiz
+    fetch('/api/submit-quiz', {
+        method: 'POST',
+        credentials: 'include',
+        body: JSON.stringify(userDataToSubmit),
+        headers: {
+          'Content-Type': 'application/json'
         }
-    });
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.message == 'success'){
+            submitBtn.disabled = true
+            const boxes = document.querySelectorAll('input[name="answer"]')
+            boxes.forEach(box => {
+                box.disabled = true
+                if(box.checked == false){
+                    box.nextElementSibling.style.opacity = '0.5';
+                }
+            })
+        }
+    })
+    .catch(error => console.error('Error:', error));
 }
 
 
-// Submits the user answer to the localStorage and shows the correct answer
-submitBtn.addEventListener('click', (event) => {
+// Shows the answer to the users
+const showAnswer = () => {
+    // Update userData.quizProgress to 'waiting'
+    fetch('/api/show-quiz', {
+        method: 'GET',
+        credentials: 'include',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.message == 'success'){            
+            nextBtnShow()
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
 
-    // Stops the page refreshing when button clicked
-    event.preventDefault();
-    event.stopPropagation();
 
-    // Gets the correct answer for the question
-    const correct = quiz.correct[x]
 
-    // Stops users not submitting an answer
-    const selection = document.querySelectorAll('input[type="checkbox"]:checked').length
-    if(selection !== 1){
-        return alert('No answer selected...')
+// Shows the answer and runs timer from next button
+const nextBtnShow = () => {
+    // Get Correct Answer
+    let correctAnswer = questions[userData.questionNumber - 1].correctAnswer
+    // Show the correct answer
+    correctAns.textContent = correctAnswer
+    correctAnsDiv.style.display = 'block'
+    // Hides the show button
+    showBtn.style.display = 'none'
+    // Shows the next button but only for the quizMaster
+    if(userData.quizMaster === true){
+        nextBtn.style.display = 'block'
+        // If auto is true show the answer in 10 seconds
+        if(userData.auto === true){
+            // The timer - auto runs nextQuestion()
+            const timer = setInterval(() => {
+                // If last question this button is changed
+                if(questionNumber === questions.length){
+                    nextBtn.classList.remove('btn-primary')
+                    nextBtn.classList.add('btn-danger')
+                    nextBtn.innerText = `Finish Quiz (${nextQuestTimer})`
+                }else{
+                    nextBtn.innerText = `Next Question (${nextQuestTimer})`
+                }
+                //Timer, set at the start of js
+                nextQuestTimer--
+                if(nextQuestTimer < 0){
+                    clearInterval(timer)
+                    nextQuestion()
+                }
+            }, 1000)
+        }
     }
+}
 
-    // Adds a 'O' for correct or 'X' for incorrect to userAns array and stores in localStorage
-    for(let i = 0; i < checkboxes.length; i++){
-        if(checkboxes[i].checked === true){
-            // Checking if the answer is correct
-            const ans = checkboxes[i].nextElementSibling.innerText.substring(3)
-            // Adds a 'O' if correct or 'X' if incorrect to userAns array 
-            // and stores it in the users localStorage 
-            if(correct.trim() === ans.trim()){
-                const userAns = localStorage.getItem('userAns')
-                if(userAns){
-                    let userAnsParse = JSON.parse(userAns)
-                    userAnsParse.push('O')
-                    localStorage.setItem('userAns', JSON.stringify(userAnsParse))
-                }else{
-                    localStorage.setItem('userAns', JSON.stringify(['O']))
-                }
-            }else{
-                const userAns = localStorage.getItem('userAns')
-                if(userAns){
-                    let userAnsParse = JSON.parse(userAns)
-                    userAnsParse.push('X')
-                    localStorage.setItem('userAns', JSON.stringify(userAnsParse))
-                }else{
-                    localStorage.setItem('userAns', JSON.stringify(['X']))
-                }
+
+// Progresses to the next question
+const nextQuestion = () => {
+    fetch('/api/next-quiz', {
+        method: 'GET',
+        credentials: 'include',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.message == 'success'){
+            window.location.replace('/quiz');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
+
+// If statements to re-connect disconnected users
+if(quizProgress === 'answered'){
+    answered()
+    checkAllSubmitted()
+}
+if(quizProgress === 'waiting'){
+    answered()
+    nextBtnShow()
+}
+
+
+// Button event listeners
+submitBtn.addEventListener("click", function (e){
+    e.preventDefault();
+    e.stopPropagation();
+    submitAnswer()
+})
+showBtn.addEventListener("click", function (e){
+    e.preventDefault();
+    e.stopPropagation();
+    showAnswer()
+})
+nextBtn.addEventListener("click", function (e){
+    e.preventDefault();
+    e.stopPropagation();
+    nextQuestion()
+})
+
+
+// Recieve submit socket emit from /api/submit-quiz
+socket.on('submit', (userName) => {
+    // add userName to submittedUl
+    let li = document.createElement('li')
+    li.classList.add('list-group-item')
+    li.id = userName
+    li.textContent = userName
+    submittedUl.append(li)
+    // Update numOfLis to show nextBtn if all users have submitted
+    numOfLis++
+    checkAllSubmitted()
+})
+
+
+// Runs showAnswer() for all users apart from quizMaster
+socket.on('show', () => {
+    if(userData.quizMaster !== true){
+        showAnswer()
+    }
+})
+
+
+// Recieve next socket emit from /api/next-quiz
+socket.on('next', () => {
+    if(userData.quizMaster != true){
+        nextQuestion()
+    }
+})
+
+
+// Removes the user from the submitted list (if there)
+socket.on('resetUser', (quizCode, userName) => {
+    if(quizCode === userData.quizCode){
+        // Remove userName from submittedUl
+        const userRemove = document.getElementById(userName)
+        userRemove.remove()
+        // Removes the user from the kick users list
+        const usersToKick = document.getElementById('usersToKick')
+        const options = usersToKick.options;
+        // Loops through all options to find the userName and remove it
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].value === userName) {
+                usersToKick.remove(i);
+                break; // Option is found and removed, so exit the loop
             }
         }
+        // update numOfLis to show nextBtn if all users have submitted
+        numOfLis--
+        checkAllSubmitted()
     }
-
-    // Hides the submit button and disables all checkboxes to stop users continually getting correct scores
-    submitBtn.style.display = 'none'
-    checkboxes.forEach(el => el.disabled = true)
-
-    // Sends a signal to app.js that a user has submitted their answer
-    socket.emit('submitted', checkUser)
-
 })
 
-socket.on('userSubmittedList', (userSubmittedList) => {
-    userSubmittedArray = userSubmittedList
-    viewSubmitted(userSubmittedArray)
-})
 
-const viewSubmitted = (userArray) => {
-    submittedUl.innerHTML = ""
-    userArray.forEach(el => {
-        const addUser = document.createElement("li");
-        addUser.innerText = el
-        addUser.classList.add("list-group-item")
-        submittedUl.appendChild(addUser)
-    })
-    if(checkUser === null || checkUser.toLowerCase() !== 'hutchybop'){
-        submittedDiv.style.display = "none"
+// Reloads the kicked users page, which re-directs them to '/'
+socket.on('kickedUser', (userName) => {
+    if(userData.userName === userName){
+        window.location.replace('/?kick=true');
     }
-}
-
-viewSubmitted(userSubmittedArray)
-
-
-// hutchybop clicks for the next question
-next.addEventListener('click', () => {
-
-    // Sends a signal to app.js to clear the userSubmittedList
-    socket.emit('clearSubmitted')
-    // Clears the local userSubmittedArray
-    userSubmittedArray = []
-    // Resets the submittedUl on quiz.ejs
-    submittedUl.innerHTML = ""
-
-    // Runs the nextQuest function
-    // Resets the checkboxes and correct answer 
-    // Then loads the next question
-    // x needs to be updated here for hutchybop
-    x += 0.5
-
-    // Sends an io signal to app.js with x (the question number)
-    // which updates the db and sends it back here for all other users to run nextQuest function
-    const emit = socket.emit('nextQuest', x)
-
-    nextQuest(x, emit)
-
 })
-
-// Once the io signal is recieved all users apart from hutchybop will run nextquest function
-// arg is x (question number sent above)
-if(checkUser !== null && checkUser.toLowerCase() !== 'hutchybop'){
-    socket.on('nextQuestU', (arg) => {
-        // x is updated here using arg from app.js for all other users
-        x = arg
-        nextQuest(x)
-    })
-}
-
-if(checkUser !== null && checkUser.toLowerCase() === 'hutchybop'){
-    socket.emit('quiz')
-}
-
