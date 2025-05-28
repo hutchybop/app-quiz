@@ -1,4 +1,4 @@
-const { lobbyNewSchema, lobbyJoinSchema, userDataSchema } = require('../models/schemas')
+const { lobbyNewSchema, lobbyJoinSchema, userDataSchema, tandcSchema } = require('../models/schemas')
 
 // Function to send a Flash error instead of re-directing to error page
 const JoiFlashError = (error, req, res, next, url) => {
@@ -47,4 +47,10 @@ module.exports.validateUserData = (req, res, next) => {
 
     const { error } = userDataSchema.validate(userData)
     JoiFlashError(error, req, res, next, previousUrl) // need to work for all routes
+}
+
+
+module.exports.validateTandC = (req, res, next) => {
+    const { error } = tandcSchema.validate(req.body)
+    JoiFlashError(error, req, res, next, '/info')
 }

@@ -312,7 +312,7 @@ module.exports.resetQuizDelete = async (req, res) => {
 
     await Quiz.deleteOne({quizCode: userData.quizCode})
 
-    // Emits the resetQuiz signal picked up in boilerplater.ejs
+// Emits the resetQuiz signal picked up in boilerplater.ejs
     // Sends the user back to '/' and wipes userData if thier quizCode is the same
     req.io.emit('resetQuiz', userData.quizCode)
 

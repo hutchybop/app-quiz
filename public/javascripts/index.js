@@ -5,6 +5,8 @@ const showJoinQuiz = document.querySelector('#showJoinQuiz')
 const quizCodeInput = document.querySelector('#quizCodeInput')
 const cancelBtnNew = document.querySelector('#cancelBtnNew')
 const cancelBtnJoin = document.querySelector('#cancelBtnJoin')
+const cookiePolicyBtn = document.querySelector('#cookiePolicyBtn')
+const tandcBtn = document.querySelector('#tandcBtn')
 
 
 // Shows userName input for a new Quiz

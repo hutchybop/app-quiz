@@ -68,7 +68,7 @@
                 <% } %>
             </div>
 
-            <% if(userData.quizMaster == true){ %>
+            <% if(userData.quizMaster == true && users.length > 1){ %>
             <div  class="card mt-4" style="width: 18rem;">
                 <form id='kickUser' action="/quiz-kick-user?_method=PATCH" method='Post' class='content p-2'>
                     <label class="mr-sm-2 quest" for="diffSelection">Kick a User</label>

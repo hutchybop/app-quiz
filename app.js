@@ -24,8 +24,14 @@ const { errorHandler } = require('./utils/errorHandler');
 const catchAsync = require('./utils/catchAsync');
 const quiz = require('./controllers/quiz');
 const api = require('./controllers/api');
+const policy = require('./controllers/policy');
 const quizChecks = require('./utils/quizChecks');
 const { validateLobbyNew, validateLobbyJoin, validateUserData } = require('./utils/middleware');
+
+
+// Required for recaptcha
+const Recaptcha = require('express-recaptcha').RecaptchaV2
+const recaptcha = new Recaptcha(process.env.SITEKEY, process.env.SECRETKEY, {callback: 'cb'})
 
 
 // Setting up express
@@ -38,8 +44,12 @@ const io = socketIo(server)
 
 // Setting up mongoose
 const dbName = "quiz"
-// const dbUrl = "mongodb://127.0.0.1:27017/" + dbName; // For local db (will not work in production)
-const dbUrl = "mongodb+srv://hutch:" + process.env.MONGODB + "@hutchybop.kpiymrr.mongodb.net/" + dbName + "?retryWrites=true&w=majority&appName=hutchyBop" // For Atlas (Cloud db)
+let dbUrl
+if (process.env.NODE_ENV !== "production") {
+    dbUrl = "mongodb://127.0.0.1:27017/" + dbName; // For local db (will not work in production)
+}else{
+    dbUrl = "mongodb+srv://hutch:" + process.env.MONGODB + "@hutchybop.kpiymrr.mongodb.net/" + dbName + "?retryWrites=true&w=majority&appName=hutchyBop" // For Atlas (Cloud db)
+}
 mongoose.connect(dbUrl);
 // Error Handling for the db connection
 const db = mongoose.connection;
@@ -63,13 +73,14 @@ app.use(mongoSanitize()) // Helps to stop mongo injection by not allowing certai
 // Setting up helmet to allow certain scripts/stylesheets
 const scriptSrcUrls = [
     "https://stackpath.bootstrapcdn.com/",
-    "https://kit.fontawesome.com/",
     "https://cdnjs.cloudflare.com/",
     "https://cdn.jsdelivr.net",
     "https://code.jquery.com/",
-    "https://www.google.com/",
-    "https://www.gstatic.com/"
+    "https://www.google.com/recaptcha/api.js",
+    "https://www.gstatic.com/recaptcha/releases/",
+    "https://use.fontawesome.com/"
 ];
+
 const styleSrcUrls = [
     "https://kit-free.fontawesome.com/",
     "https://stackpath.bootstrapcdn.com/",
@@ -78,16 +89,29 @@ const styleSrcUrls = [
     "https://cdn.jsdelivr.net/",
     "https://cdnjs.cloudflare.com/",
     "https://fonts.gstatic.com",
-    "https://fonts.googleapis.com/",
+    "https://www.gstatic.com/recaptcha/releases/"
 ];
-const imgSrcUrls = [];
+
+const imgSrcUrls = [
+    "https://www.gstatic.com/recaptcha/",
+    "https://www.google.com/recaptcha/"
+];
+
 const connectSrcUrls = [
-    "https://www.google.com/"
+    "https://www.google.com/",
+    "https://www.gstatic.com/recaptcha/"
 ];
+
 const fontSrcUrls = [
     "https://cdnjs.cloudflare.com/",
     "https://fonts.gstatic.com",
     "https://fonts.googleapis.com/",
+    "https://use.fontawesome.com/"
+];
+
+const frameSrcUrls = [
+    'https://www.google.com',
+    'https://www.recaptcha.net'
 ];
 // Function to configure helmet based on environment
 function configureHelmet() {
@@ -104,11 +128,13 @@ function configureHelmet() {
                         objectSrc: ["'none'"],
                         imgSrc: ["'self'", "blob:", "data:", ...imgSrcUrls],
                         fontSrc: ["'self'", ...fontSrcUrls],
+                        frameSrc: ["'self'", ...frameSrcUrls],
+                        upgradeInsecureRequests: null,  // Relax or adjust as necessary
+                        scriptSrcAttr: ["'self'", "'unsafe-inline'"]  // Adjust based on your needs
                     },
                 },
                 crossOriginOpenerPolicy: { policy: "same-origin" },
-                originAgentCluster: true,
-                // Add other helmet configurations as needed
+                originAgentCluster: true
             })
         );
     } else {
@@ -116,21 +142,25 @@ function configureHelmet() {
             helmet({
                 contentSecurityPolicy: {
                     directives: {
-                        defaultSrc: ["'self'"],
-                        connectSrc: ["'self'", ...connectSrcUrls],
-                        scriptSrc: ["'self'", "'unsafe-inline'", ...scriptSrcUrls],
-                        styleSrc: ["'self'", "'unsafe-inline'", ...styleSrcUrls],
+                        defaultSrc: ["'self'", "*"],
+                        connectSrc: ["'self'", "*", ...connectSrcUrls],
+                        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "*", ...scriptSrcUrls],
+                        styleSrc: ["'self'", "'unsafe-inline'", "*", ...styleSrcUrls],
                         workerSrc: ["'self'", "blob:"],
-                        objectSrc: ["'none'"],
-                        imgSrc: ["'self'", "blob:", "data:", ...imgSrcUrls],
-                        fontSrc: ["'self'", ...fontSrcUrls],
-                        upgradeInsecureRequests: null,  // Explicitly set to null
-                        scriptSrcAttr: ["'self'", "'unsafe-inline'"], // Allow inline event handlers
+                        objectSrc: ["'self'", "*"],
+                        imgSrc: ["'self'", "blob:", "data:", "*", ...imgSrcUrls],
+                        fontSrc: ["'self'", "*", ...fontSrcUrls],
+                        frameSrc: ["'self'", "*", ...frameSrcUrls],
+                        upgradeInsecureRequests: null,
+                        scriptSrcAttr: ["'self'", "'unsafe-inline'", "*"]
                     },
                 },
-                crossOriginOpenerPolicy: { policy: "unsafe-none" }, // Relaxed in development
+                crossOriginOpenerPolicy: { policy: "unsafe-none" }, // Relaxed for development
                 originAgentCluster: false, // Disabled in development
-                // You can disable other helmet features or modify settings here for development
+                referrerPolicy: { policy: "no-referrer-when-downgrade" }, // Less strict referrer policy
+                frameguard: false, // Disable clickjacking protection in development
+                hsts: false, // Disable HTTP Strict Transport Security (HSTS) in development
+                noSniff: false // Allow MIME type sniffing in development
             })
         );
     }
@@ -211,6 +241,12 @@ app.get('/finish', catchAsync(quiz.finish))
 app.patch("/quiz-kick-user", catchAsync(quiz.quizKickUserPatch))
 app.patch('/reset-user', catchAsync(quiz.resetUserPatch))
 app.delete('/reset-quiz', catchAsync(quiz.resetQuizDelete))
+
+
+// Policy Routes
+app.get('/cookie-policy', policy.cookiePolicy)
+app.get('/tandc', recaptcha.middleware.render, policy.tandc)
+app.post('/tandc', recaptcha.middleware.verify, policy.tandcPost)
 
 
 // Unknown (404) webpage error

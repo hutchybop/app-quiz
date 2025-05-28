@@ -20,27 +20,29 @@ socket.on('resetUser', (quizCode, userName) => {
     }
 })
 
+if(userData.quizMaster === true){
+    startBtn.addEventListener("click", function (e){
+        e.preventDefault();
+        e.stopPropagation();
+        // Sends an AJAX request to the server to start the quiz
+        fetch('/api/start-quiz', {
+            method: 'POST',
+            credentials: 'include',
+            body: JSON.stringify(userData),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.message == 'success'){
+                window.location.replace('/quiz');
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    })
+}
 
-startBtn.addEventListener("click", function (e){
-    e.preventDefault();
-    e.stopPropagation();
-    // Sends an AJAX request to the server to start the quiz
-    fetch('/api/start-quiz', {
-        method: 'POST',
-        credentials: 'include',
-        body: JSON.stringify(userData),
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if(data.message == 'success'){
-            window.location.replace('/quiz');
-        }
-    })
-    .catch(error => console.error('Error:', error));
-})
 
 
 socket.on('start', (quizCode) => {

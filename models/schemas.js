@@ -61,7 +61,7 @@ module.exports.lobbyNewSchema = Joi.object({
 
 module.exports.lobbyJoinSchema = Joi.object({
     userNameJoin: Joi.string().required().escapeHTML(),
-    quizCode: Joi.string().escapeHTML().required()
+    quizCode: Joi.number().required()
 }).required()
 
 
@@ -75,6 +75,14 @@ module.exports.userDataSchema = Joi.object({
     quizMaster: Joi.boolean().required(),
     auto: Joi.boolean()
 })
+
+
+module.exports.tandcSchema = Joi.object({
+    name: Joi.string().required().escapeHTML(),
+    message: Joi.string().required().escapeHTML(),
+    email: Joi.string().email().required(),
+    'g-recaptcha-response': Joi.string().allow(null, '')
+}).required()
 
 
 

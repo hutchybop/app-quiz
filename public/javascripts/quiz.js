@@ -292,7 +292,10 @@ socket.on('resetUser', (quizCode, userName) => {
     if(quizCode === userData.quizCode){
         // Remove userName from submittedUl
         const userRemove = document.getElementById(userName)
-        userRemove.remove()
+        // Stoips promise error if the userName is not in the sumittedUl
+        if(userRemove){
+            userRemove.remove()
+        }
         // Removes the user from the kick users list
         const usersToKick = document.getElementById('usersToKick')
         const options = usersToKick.options;

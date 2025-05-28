@@ -37,13 +37,8 @@
       crossorigin="anonymous"
     />
 
-    <!-- Font Aewsome -->
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
-    />
-
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.gstatic.com" />
@@ -66,6 +61,22 @@
   <body>
 
     <main class="vh-100">
+
+            <!-- Cookie Alert -->
+            <div class="container mt-3">
+              <div class="row">
+                <div class="col">
+                  <div id="cookieAlert" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    This site uses essential cookies for functionality. By continuing to use our site, you agree to their use. 
+                    <br>
+                    <a href="/cookie-policy">Cookie Policy</a>
+                    <button id="cookieAlertBtn" type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true"><i class="fa-regular fa-thumbs-up"></i></i></i></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
       <% if(userData && userData.quizMaster == true){ %>
         <!-- Lets the QuizMaster reset the Quiz -->
@@ -90,14 +101,18 @@
 
       <%- body %>
 
+
+
+
     </main>
 
-    <!-- BootStrap scripts -->
+    <!-- BootStrap jquery script -->
     <script
       src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
       integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
       crossorigin="anonymous"
     ></script>
+    <!-- Bootstrap script -->
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-ho+j7jyWK8fNQe+A12Hb8AhRq26LrZ/JpcUGGOn+Y7RsweNrtN/tE3MoK7ZeZDyx"
@@ -105,51 +120,8 @@
     ></script>
     <!-- Bootstrap - validateForms -->
     <script type="text/javascript" src="/javascripts/validateForms.js"></script>
-    
-
-    <!-- io.socket script -->
-    <script>
-      const socket = io();
-      
-      // ResetQuiz emitted from quiz controller reset-quiz route
-      socket.on('resetQuiz', (quizCode) => {
-
-        if(res.locals.userData && res.locals.userData.quizCode !== quizCode){
-
-          let userQuizCode = ''
-
-          // Sends an AJAX request to the server to retrieve the user;s current quizCode.
-          fetch('/api/quizcode',{
-            method: 'GET',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-          })
-          .then(response => response.json())
-          .then(data => {
-
-            // If the user's quizCode (data.message) is the same as 
-            // The quizCode from the reset io.socket (sent from /reset-quiz)
-            // It reloads the window and redirects the user to / where userData is wiped
-            // This happens either at / or quizChecks middleware
-            userQuizCode = data.message
-            if(userQuizCode == quizCode){
-              window.location.replace("/?isResetQuiz=true");
-            }
-          })
-          .catch(error => console.error('Error fetching user data:', error));
-        }
-
-      })
-
-
-
-    </script>
-
-
-<script>
-  
-</script>
-
+    <!-- Boilerplate script -->
+    <script type="text/javascript" src="/javascripts/boilerplate.js "></script>
     <!-- Personal scripts -->
     <script type="text/javascript" src="/javascripts/<%= page %>.js "></script>
 

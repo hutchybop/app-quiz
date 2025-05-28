@@ -6,7 +6,7 @@ const quizChecks = async (req, res, next) => {
     // try {
 
         // Is a user with no userData going to an allowedPath path
-        const allowedPathsNewUser = ['/', '/lobby-new', '/lobby-join'];
+        const allowedPathsNewUser = ['/', '/lobby-new', '/lobby-join', '/cookie-policy', '/tandc'];
         if (!res.locals.userData && !allowedPathsNewUser.includes(req.path)) {
             req.flash('success', 'Please start or join a quiz.');
             return res.redirect('/');
@@ -23,7 +23,9 @@ const quizChecks = async (req, res, next) => {
             '/api/submit-quiz',
             '/api/show-quiz',
             '/api/next-quiz',
-            '/api/finished-quiz'
+            '/api/finished-quiz',
+            '/cookie-policy', 
+            '/tandc'
         ];
         const allowedQueries = [
             'kick',
