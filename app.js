@@ -276,7 +276,7 @@ app.all('*', (req, res, next) => {
 app.use(errorHandler)
 
 
-let port = 3000; // This is the port setup with nginx on longrunner server
+let port = 3002; // This is the port setup with nginx on longrunner server
 server.listen(port, () => console.log('Server listening on PORT', port ));
 
 
@@ -284,12 +284,12 @@ server.listen(port, () => console.log('Server listening on PORT', port ));
 io.on('connection', (socket) => {
     // No need to log connections and disconnections if not required
 
-    const clientId = socket.id;
-    console.log(`User connected: ${clientId}`);
+    // const clientId = socket.id;
+    // console.log(`User connected: ${clientId}`);
 
-    // Listen for disconnection
-    socket.on('disconnect', () => {
-        console.log(`User disconnected: ${clientId}`);
-    });
+    // // Listen for disconnection
+    // socket.on('disconnect', () => {
+    //     console.log(`User disconnected: ${clientId}`);
+    // });
     
 });
