@@ -39,6 +39,12 @@ const recaptcha = new Recaptcha(process.env.SITEKEY, process.env.SECRETKEY, {cal
 
 // Setting up express
 const app = express();
+
+// If in production, tells express about nginx proxy
+if (process.env.NODE_ENV === "production") {
+    app.set('trust proxy', 1);
+}
+
 const server = http.createServer(app);
 
 // Setting up socket.io
