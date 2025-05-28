@@ -1,0 +1,39 @@
+<% layout('layouts/boilerplate')%>
+
+<section class="h-100">
+    <header class="container h-100">
+         <div class="d-flex align-items-center justify-content-center h-100">
+                <div class="d-flex flex-column">
+                    <h1 class="content align-self-center text-center p-2">Enter a username and press start to begin your Quiz!!</h1>
+                    <div id="dupe" class="align-self-center p-2 alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>UserName already taken!</strong> <p>Please try again.</p>
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <form id='lobby' action="/lobby" method='post' class='content validated-form p-2' novalidate>
+                        <div class='form-group'>
+                            <label for="userName" class="form-label text-center">Enter Your Username</label>
+                            <input type="text" id="userName" name="userName" class="form-control" required>
+                            <div class="invalid-feedback">
+                                Please provide a userName.
+                            </div>
+                        </div>
+                        <button id="lobbyBtn" class="btn btn-success" disabled>Start</button>
+                        <p id="inProgress">Quiz still in progress... Page will reload when the quiz is reset</p>
+                    </form>
+                </div>
+          </div>
+    </header>
+</section>
+
+
+<script>
+
+    // Variables sent from index controller. Need to be defined here as won't work in .js file
+    const userDupe = <%- dupe %>
+    const gameInProgress = <%- inProgress %>
+    const userListArray = <%- userList %>
+    const userGameState = <%- gameState %>
+
+</script>
