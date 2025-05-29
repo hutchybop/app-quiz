@@ -5,6 +5,7 @@ A work-in-progress quiz application built with **Node.js**, **Express**, **EJS**
 Test your knowledge solo or challenge a friend in real-time multiplayer mode!
 
 🔗 Try it out live: [https://quiz.longrunner.co.uk](https://quiz.longrunner.co.uk)
+Note: If the website is down, I'm probably testing or updating it.
 
 ---
 
