@@ -37,4 +37,3 @@ Feel free to open issues or submit pull requests with:
 - Bug reports.
 
 ---
-Testing
