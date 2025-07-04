@@ -273,7 +273,7 @@ app.post('/tandc', recaptcha.middleware.verify, validateTandC, policy.tandcPost)
 
 // Unknown (404) webpage error
 // Uses the ExpressError to pass message (Page Not Found) and statusCode (404) to the error handler
-app.all('*', (req, res, next) => {
+app.use((req, res, next) => {
     next(new ExpressError('Page Not Found', 404))
 })
 
