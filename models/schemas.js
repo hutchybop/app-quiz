@@ -9,6 +9,9 @@ const extension = (joi) => ({
     },
     rules: {
         escapeHTML: {
+            method() {
+                return this.$_addRule('escapeHTML');
+            },
             validate(value, helpers) {
                 const clean = sanitizeHtml(value, {
                     allowedTags: [],

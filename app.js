@@ -15,7 +15,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const helmet = require('helmet');
 const http = require('http');
 const socketIo = require('socket.io');
-const flash = require('connect-flash');
+const flash = require('@codecorn/connect-flash-new');
 const favicon = require('serve-favicon')
 const compression = require('compression')
 
