@@ -2,7 +2,7 @@ const userList = document.querySelector("#userList");
 const startBtn = document.querySelector("#startBtn");
 
 // Listen for the 'userUpdated' event
-socket.on("userJoined", (userNameJoin) => {
+socketInstance.on("userJoined", (userNameJoin) => {
   const newUserItem = document.createElement("li");
   newUserItem.className = "list-group-item";
   newUserItem.id = userNameJoin;
@@ -11,7 +11,7 @@ socket.on("userJoined", (userNameJoin) => {
 });
 
 // Listen for resetUser event from reset-user route
-socket.on("resetUser", (quizCode, userName) => {
+socketInstance.on("resetUser", (quizCode, userName) => {
   if (quizCode == userData.quizCode) {
     const userRemove = document.getElementById(userName);
     userRemove.remove();
@@ -41,7 +41,7 @@ if (userData.quizMaster === true) {
   });
 }
 
-socket.on("start", (quizCode) => {
+socketInstance.on("start", (quizCode) => {
   if (quizCode == userData.quizCode && userData.quizMaster == false) {
     fetch("/api/start-quiz", {
       method: "POST",
