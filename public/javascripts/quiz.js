@@ -248,7 +248,7 @@ nextBtn.addEventListener("click", function (e) {
 });
 
 // Recieve submit socket emit from /api/submit-quiz
-socket.on("submit", (userName) => {
+socketInstance.on("submit", (userName) => {
   // add userName to submittedUl
   let li = document.createElement("li");
   li.classList.add("list-group-item");
@@ -261,21 +261,21 @@ socket.on("submit", (userName) => {
 });
 
 // Runs showAnswer() for all users apart from quizMaster
-socket.on("show", () => {
+socketInstance.on("show", () => {
   if (userData.quizMaster !== true) {
     showAnswer();
   }
 });
 
 // Recieve next socket emit from /api/next-quiz
-socket.on("next", () => {
+socketInstance.on("next", () => {
   if (userData.quizMaster != true) {
     nextQuestion();
   }
 });
 
 // Removes the user from the submitted list (if there)
-socket.on("resetUser", (quizCode, userName) => {
+socketInstance.on("resetUser", (quizCode, userName) => {
   if (quizCode === userData.quizCode) {
     // Remove userName from submittedUl
     const userRemove = document.getElementById(userName);
@@ -300,7 +300,7 @@ socket.on("resetUser", (quizCode, userName) => {
 });
 
 // Reloads the kicked users page, which re-directs them to '/'
-socket.on("kickedUser", (userName) => {
+socketInstance.on("kickedUser", (userName) => {
   if (userData.userName === userName) {
     window.location.replace("/?kick=true");
   }
