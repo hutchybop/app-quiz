@@ -1,3 +1,4 @@
+const socketInstance = io();
 const multiOne = document.getElementById("multiOne");
 const ansOne = document.getElementById("ansOne");
 const labelOne = document.getElementById("labelOne");

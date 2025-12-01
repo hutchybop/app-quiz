@@ -1,3 +1,4 @@
+const socketInstance = io();
 const userList = document.querySelector("#userList");
 const startBtn = document.querySelector("#startBtn");
 
