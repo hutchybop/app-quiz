@@ -20,7 +20,8 @@ const logger = async (req, res, next) => {
       log.timesVisited += 1;
       log.lastVisitDate = now.toLocaleDateString("en-GB");
       log.lastVisitTime = now.toLocaleTimeString("en-GB");
-      log.routes.set(route, (log.routes.get(route) || 0) + 1);
+      const sanitizedRoute = route.replace(/\./g, "_");
+      log.routes.set(sanitizedRoute, (log.routes.get(sanitizedRoute) || 0) + 1);
       await log.save();
     } else {
       // Document does not exist, create a new one

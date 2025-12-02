@@ -1,4 +1,4 @@
-const socketInstance = io();
+/* global socketInstance */
 const userList = document.querySelector("#userList");
 const startBtn = document.querySelector("#startBtn");
 

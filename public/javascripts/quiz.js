@@ -1,4 +1,4 @@
-const socketInstance = io();
+/* global socketInstance */
 const multiOne = document.getElementById("multiOne");
 const ansOne = document.getElementById("ansOne");
 const labelOne = document.getElementById("labelOne");
