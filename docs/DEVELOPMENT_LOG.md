@@ -1,5 +1,25 @@
 # DEVELOPMENT_LOG.md
 
+## Session 9
+
+### Saturday February 28th
+
+<br>
+
+**Summary:** This session focused on dependency maintenance and package updates. The team updated NPM packages to ensure the project uses the latest stable versions of dependencies, maintaining compatibility and security.
+
+**Git Branch:** main <br>
+**Git commits:** <br>
+2055e16
+
+**Session git history:**
+
+- Update npm packages 20260228-1455 - _Updated NPM packages to latest stable versions_
+
+---
+
+<br>
+
 ## Session 8
 
 ### Tuesday December 2nd
