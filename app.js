@@ -285,8 +285,11 @@ app.use((req, res, next) => {
 // Error Handler, from utils.
 app.use(errorHandler);
 
-let port = 3002; // This is the port setup with nginx on longrunner server
-server.listen(port, () => console.log("Server listening on PORT", port));
+// Start server on port using HTTP
+const port = 3002;
+server.listen(port, "0.0.0.0", () =>
+  console.log(`Server running on port ${port} on all interfaces`),
+);
 
 // // Simplified io.socket setup
 // io.on("connection", (socket) => {
