@@ -1,3 +1,18 @@
+# ⚠️ Archived Project
+
+### This repository has been archived and is no longer actively maintained.
+
+- No new features or bug fixes will be added
+- Issues and pull requests are no longer monitored
+- If you’d like to continue development, feel free to fork the project.
+
+Last maintained: 20260331
+
+Superseded by: longrunner-platform (monrepo project)
+
+---
+---
+
 # ❓ Quiz Web App
 
 A work-in-progress quiz application built with **Node.js**, **Express**, **EJS**, **MongoDB**, and **Socket.IO**.
